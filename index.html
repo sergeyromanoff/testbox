@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Параметрический генератор коробок ECMA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {
+        fontFamily: { sans: ['Inter','system-ui','sans-serif'], mono: ['JetBrains Mono','monospace'] },
+        colors: { slate: { 850: '#151e2e', 950: '#0a0f1a' } }
+      }}
+    };
+  </script>
+  <style>
+    body { font-family:'Inter',system-ui,sans-serif; background:#0a0f1a; color:#e2e8f0; }
+    .blueprint-grid {
+      background-color:#0b1220;
+      background-image:
+        linear-gradient(to right, rgba(56,189,248,.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56,189,248,.06) 1px, transparent 1px),
+        linear-gradient(to right, rgba(56,189,248,.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56,189,248,.12) 1px, transparent 1px);
+      background-size:20px 20px,20px 20px,100px 100px,100px 100px;
+    }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity:.6; }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:#0f172a; }
+    ::-webkit-scrollbar-thumb { background:#334155; border-radius:9999px; }
+    ::-webkit-scrollbar-thumb:hover { background:#475569; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <header class="bg-slate-900/95 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-inner">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-bold text-white tracking-tight">Генератор развёртки коробок</h1>
+          <span id="headerTypeBadge" class="px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[10px] font-mono font-semibold text-cyan-300">ECMA A60.20</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Параметрический штамп 1:1 (Рез #FF0000 / Биговка #0000FF) для CorelDRAW</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button id="btnDownloadSvg" type="button" class="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 active:bg-cyan-600 text-slate-950 font-semibold text-xs flex items-center gap-2 transition shadow-lg shadow-cyan-500/20 cursor-pointer">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Скачать SVG (1:1 мм)</span>
+      </button>
+      <button id="btnDownloadHtml" type="button" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-xs flex items-center gap-1.5 transition cursor-pointer">
+        <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+        </svg>
+        <span class="hidden sm:inline">Скачать HTML-модуль</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="flex-1 flex flex-col lg:flex-row min-h-0">
+    <aside class="w-full lg:w-[390px] xl:w-[415px] bg-slate-900/95 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col shrink-0 lg:h-[calc(100vh-58px)]">
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+        <section class="bg-slate-850 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-1.5 h-4 rounded-full bg-purple-500"></span>Тип конструкции (ECMA)
+            </h2>
+            <span class="text-[10px] font-mono text-slate-400">3 вида</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button id="btnTypeAutolock" type="button" class="text-left p-2 rounded-xl border-2 border-slate-700/80 bg-slate-900/70 hover:border-slate-600 transition cursor-pointer">
+              <div class="flex items-center justify-between mb-1"><span class="text-[11px] font-bold text-white leading-none">Автодно</span><span id="dotTypeAutolock" class="w-1.5 h-1.5 rounded-full bg-slate-700 shrink-0"></span></div>
+              <div class="text-[9px] font-mono text-cyan-300/90 leading-tight">A60.20.01.01</div>
+              <div class="text-[9px] text-slate-400 leading-tight mt-0.5">С окошком</div>
+            </button>
+            <button id="btnTypeEcma055" type="button" class="text-left p-2 rounded-xl border-2 border-cyan-500 bg-cyan-500/10 transition cursor-pointer">
+              <div class="flex items-center justify-between mb-1"><span class="text-[11px] font-bold text-white leading-none">Замок</span><span id="dotTypeEcma055" class="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] shrink-0"></span></div>
+              <div class="text-[9px] font-mono text-purple-300/90 leading-tight">A55.20.01.01</div>
+              <div class="text-[9px] text-slate-400 leading-tight mt-0.5">Крючки + паз</div>
+            </button>
+            <button id="btnTypeEcma020" type="button" class="text-left p-2 rounded-xl border-2 border-slate-700/80 bg-slate-900/70 hover:border-slate-600 transition cursor-pointer">
+              <div class="flex items-center justify-between mb-1"><span class="text-[11px] font-bold text-white leading-none">Встречн.</span><span id="dotTypeEcma020" class="w-1.5 h-1.5 rounded-full bg-slate-700 shrink-0"></span></div>
+              <div class="text-[9px] font-mono text-amber-300/90 leading-tight">A20.20.03.01</div>
+              <div class="text-[9px] text-slate-400 leading-tight mt-0.5">Клапаны P1/P3</div>
+            </button>
+          </div>
+        </section>
+
+        <section class="bg-slate-850 border border-slate-800 rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-1.5 h-4 rounded-full bg-cyan-500"></span>1. Габариты коробки (мм)
+            </h2>
+            <span class="text-[11px] font-mono text-slate-400">L × W × H</span>
+          </div>
+          <div class="flex items-end gap-1.5">
+            <div class="flex-1 min-w-0">
+              <label for="inputL" class="block text-[10px] text-slate-400 mb-1 truncate">Длина L (глубина)</label>
+              <input id="inputL" type="number" min="25" max="600" step="0.5" value="65" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-sm font-mono text-white focus:outline-none focus:border-cyan-500 transition" />
+            </div>
+            <button id="btnSwapLW" type="button" title="Поменять L и W местами" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-cyan-400 border border-slate-700 transition cursor-pointer shrink-0 mb-[1px]">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+              </svg>
+            </button>
+            <div class="flex-1 min-w-0">
+              <label for="inputW" class="block text-[10px] text-slate-400 mb-1 truncate">Ширина W (фасад)</label>
+              <input id="inputW" type="number" min="25" max="600" step="0.5" value="70" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-sm font-mono text-white focus:outline-none focus:border-cyan-500 transition" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <label for="inputH" class="block text-[10px] text-slate-400 mb-1 truncate">Высота H</label>
+              <input id="inputH" type="number" min="30" max="900" step="0.5" value="290" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-sm font-mono text-white focus:outline-none focus:border-cyan-500 transition" />
+            </div>
+          </div>
+          <div>
+            <span class="block text-[11px] text-slate-400 mb-1.5">Быстрые тестовые размеры:</span>
+            <div id="presetsContainer" class="flex flex-wrap gap-1.5"></div>
+          </div>
+        </section>
+
+        <section class="bg-slate-850 border border-slate-800 rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-1.5 h-4 rounded-full bg-emerald-500"></span>2. Припуск и клапаны
+            </h2>
+            <span class="text-[11px] font-mono text-emerald-400">Бристоль 300–350 г</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label for="inputD" class="block text-[11px] text-slate-400 mb-1">Припуск d (мм)</label>
+              <input id="inputD" type="number" min="0" max="5" step="0.1" value="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500 transition" />
+              <div class="flex gap-1 mt-1">
+                <button type="button" data-d="0.4" class="d-preset flex-1 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[9px] font-mono text-slate-400 cursor-pointer">0.4</button>
+                <button type="button" data-d="0.5" class="d-preset flex-1 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/40 text-[9px] font-mono text-emerald-300 cursor-pointer">0.5</button>
+                <button type="button" data-d="1.2" class="d-preset flex-1 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[9px] font-mono text-slate-400 cursor-pointer">1.2</button>
+              </div>
+            </div>
+            <div>
+              <label for="inputGlueW" class="block text-[11px] text-slate-400 mb-1">Клеевой (мм)</label>
+              <input id="inputGlueW" type="number" min="8" max="40" step="0.5" value="15" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500 transition" />
+            </div>
+            <div>
+              <label for="inputTuckH" class="block text-[11px] text-slate-400 mb-1">Язычок (мм)</label>
+              <input id="inputTuckH" type="number" min="8" max="40" step="0.5" value="16" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500 transition" />
+            </div>
+          </div>
+          <div class="pt-1 space-y-2 border-t border-slate-800/80">
+            <label class="flex items-center justify-between gap-2 text-xs text-slate-300 cursor-pointer select-none">
+              <span>Насечки под клей на боковом клапане</span>
+              <input id="chkGlueNotches" type="checkbox" checked class="w-4 h-4 rounded bg-slate-900 border-slate-600 text-cyan-500 focus:ring-0 cursor-pointer" />
+            </label>
+            <label class="flex items-center justify-between gap-2 text-xs text-slate-300 cursor-pointer select-none">
+              <span>Показывать габаритные размеры на чертеже</span>
+              <input id="chkShowDims" type="checkbox" checked class="w-4 h-4 rounded bg-slate-900 border-slate-600 text-cyan-500 focus:ring-0 cursor-pointer" />
+            </label>
+          </div>
+        </section>
+
+        <section class="bg-slate-850 border border-slate-800 rounded-xl p-3.5 space-y-3">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <span class="w-1.5 h-4 rounded-full bg-amber-400"></span>3. Параметры заготовки и форматы
+          </h2>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">Размер развёртки</div>
+              <div id="statBlankSize" class="text-sm font-bold font-mono text-white mt-0.5">—</div>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">Площадь габарита</div>
+              <div id="statBlankArea" class="text-sm font-bold font-mono text-cyan-400 mt-0.5">—</div>
+            </div>
+          </div>
+          <div class="space-y-1.5 text-xs">
+            <div id="fitCard35" class="flex items-center justify-between px-2.5 py-2 rounded-lg bg-slate-900/80 border border-slate-800">
+              <div><div class="font-mono font-semibold text-slate-200">Лист 35×50 см</div><div class="text-[10px] font-mono text-slate-400">Зона: 330 × 480 мм</div></div>
+              <span id="fitBadge35" class="px-2 py-0.5 rounded font-mono text-[11px] font-semibold">—</span>
+            </div>
+            <div id="fitCard50" class="flex items-center justify-between px-2.5 py-2 rounded-lg bg-slate-900/80 border border-slate-800">
+              <div><div class="font-mono font-semibold text-slate-200">Лист 50×70 см</div><div class="text-[10px] font-mono text-slate-400">Зона: 480 × 680 мм</div></div>
+              <span id="fitBadge50" class="px-2 py-0.5 rounded font-mono text-[11px] font-semibold">—</span>
+            </div>
+          </div>
+          <div id="panelSummaryText" class="text-[11px] font-mono text-slate-400 bg-slate-900/60 border border-slate-800/80 rounded-lg p-2.5 leading-relaxed">—</div>
+        </section>
+      </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-w-0 lg:h-[calc(100vh-58px)] overflow-hidden">
+      <div class="px-4 py-2 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+        <div class="flex flex-wrap items-center gap-4 text-[11px] text-slate-300">
+          <span class="flex items-center gap-1.5"><span class="w-4 h-0.5 bg-red-500 inline-block"></span>Рез (<span class="font-mono text-red-400">#FF0000</span>)</span>
+          <span class="flex items-center gap-1.5"><span class="w-4 h-0.5 border-t-2 border-dashed border-blue-500 inline-block"></span>Биговка (<span class="font-mono text-blue-400">#0000FF</span>)</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="btnZoomOut" type="button" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer" title="Уменьшить">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <span id="zoomLabel" class="font-mono text-xs text-slate-300 w-12 text-center">100%</span>
+          <button id="btnZoomIn" type="button" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer" title="Увеличить">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button id="btnFit" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium cursor-pointer">Вписать</button>
+        </div>
+      </div>
+      <div id="viewport" class="flex-1 blueprint-grid relative overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing select-none min-h-[420px]">
+        <div id="panZoomWrap" class="origin-center will-change-transform">
+          <svg id="previewSvg" xmlns="http://www.w3.org/2000/svg" class="block"></svg>
+        </div>
+        <div class="absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-slate-900/85 border border-slate-800 text-[10px] font-mono text-slate-400 pointer-events-none">
+          Колесо мыши: масштаб • Перетаскивание: сдвиг чертежа
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="fixed bottom-4 right-4 z-50 px-4 py-2.5 rounded-xl bg-slate-900 border border-cyan-500/50 text-cyan-200 text-xs font-medium shadow-2xl opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    // =====================================================================
+    // СОСТОЯНИЕ
+    // =====================================================================
+    const PRESETS_BY_TYPE = {
+      autolock: [
+        { label: '90×90×297 (Эталон)', l: 90, w: 90, h: 297, primary: true },
+        { label: '80×80×200', l: 80, w: 80, h: 200 },
+        { label: '100×70×250', l: 100, w: 70, h: 250 },
+        { label: '120×80×180', l: 120, w: 80, h: 180 }
+      ],
+      ecma055: [
+        { label: '65×70×290 (Эталон)', l: 65, w: 70, h: 290, primary: true },
+        { label: '70×70×200', l: 70, w: 70, h: 200 },
+        { label: '100×70×250', l: 100, w: 70, h: 250 },
+        { label: '60×60×150', l: 60, w: 60, h: 150 }
+      ],
+      ecma020: [
+        { label: '80×60×180 (Эталон)', l: 60, w: 80, h: 180, primary: true },
+        { label: '90×90×297', l: 90, w: 90, h: 297 },
+        { label: '70×65×290', l: 65, w: 70, h: 290 },
+        { label: '100×50×200', l: 50, w: 100, h: 200 }
+      ]
+    };
+
+    const state = {
+      boxType: 'ecma055',
+      L: 65, W: 70, H: 290,
+      d: 0.5, glueW: 15, tuckH: 16,
+      glueNotches: true, showDims: true,
+      zoom: 1, panX: 0, panY: 0
+    };
+
+    function f(n) { return Number(n.toFixed(3)); }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.remove('opacity-0'); el.classList.add('opacity-100');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.classList.remove('opacity-100'); el.classList.add('opacity-0'); }, 2400);
+    }
+
+    // Скругление угла (используется в других типах; оставлено для совместимости)
+    function filletCorner(pPrev, pCorner, pNext, radius) {
+      const v1x = pPrev.x - pCorner.x, v1y = pPrev.y - pCorner.y, len1 = Math.hypot(v1x, v1y);
+      const v2x = pNext.x - pCorner.x, v2y = pNext.y - pCorner.y, len2 = Math.hypot(v2x, v2y);
+      if (len1 < 1e-6 || len2 < 1e-6 || radius <= 1e-6) return { svg: `L ${f(pCorner.x)} ${f(pCorner.y)}` };
+      const u1x = v1x/len1, u1y = v1y/len1, u2x = v2x/len2, u2y = v2y/len2;
+      const dot = Math.max(-1, Math.min(1, u1x*u2x + u1y*u2y));
+      const theta = Math.acos(dot);
+      if (theta < 1e-4 || Math.abs(Math.PI - theta) < 1e-4) return { svg: `L ${f(pCorner.x)} ${f(pCorner.y)}` };
+      const tanHalf = Math.tan(theta/2);
+      const maxT = Math.min(len1*0.48, len2*0.48);
+      const tDist = Math.min(radius/tanHalf, maxT);
+      const actualR = tDist*tanHalf;
+      const t1 = { x: pCorner.x + u1x*tDist, y: pCorner.y + u1y*tDist };
+      const t2 = { x: pCorner.x + u2x*tDist, y: pCorner.y + u2y*tDist };
+      const cross = (-u1x)*u2y - (-u1y)*u2x;
+      const sweep = cross > 0 ? 1 : 0;
+      return { svg: `L ${f(t1.x)} ${f(t1.y)} A ${f(actualR)} ${f(actualR)} 0 0 ${sweep} ${f(t2.x)} ${f(t2.y)}` };
+    }
+
+    // =====================================================================
+    // РАСЧЁТ ГЕОМЕТРИИ
+    // =====================================================================
+    function calculateGeometry() {
+      const isEcma055 = state.boxType === 'ecma055';
+      const isEcma020 = state.boxType === 'ecma020';
+
+      const L = Math.max(25, Math.min(600, Number(state.L) || 65));
+      const W = Math.max(25, Math.min(600, Number(state.W) || 70));
+      const H = Math.max(30, Math.min(900, Number(state.H) || 290));
+      const d = Math.max(0, Math.min(5, Number(state.d) || 0.5));
+      const glueW = Math.max(8, Math.min(40, Number(state.glueW) || 15));
+      const tuckH = Math.max(8, Math.min(40, Number(state.tuckH) || 16));
+
+      // --- Панели по X ---
+      const p1W = W;
+      const p2W = L;
+      const p3W = W;
+      const p4W = Math.max(10, L - d);
+
+      const x0 = 0;
+      const x1 = glueW;
+      const x2 = x1 + p1W;
+      const x3 = x2 + p2W;
+      const x4 = x3 + p3W;
+      const x5 = x4 + p4W;
+
+      // --- Вертикальные уровни ---
+      // Верхний tuck-in клапан на P1
+      const yTuckTop = 0;
+      const yLidCrease = tuckH;              // биговка tuck-клапана
+      const yTop1 = yLidCrease;              // верхняя кромка корпуса P1 (совпадает, т.к. tuck на P1)
+      const yTopSide = yTop1 + d;            // P2..P4 на d ниже (компенсация)
+      const yBot = yTopSide + H;             // нижняя биговка
+
+      // Верхние "пыльники" на P2 и P4 (короткие, стандарт)
+      const dustH = Math.max(10, W/2 - d - 3);
+      const yDustTop = yTopSide - dustH;
+
+      // Клеевой клапан
+      const glueChamfer = Math.min(glueW * 0.35, 6.0);
+
+      // =====================================================================
+      // ВЕРХНИЙ TUCK-IN КЛАПАН (P1) — стандарт A55: скосы + центральный фиксатор
+      // =====================================================================
+      const tuckSideInset = Math.min(3.0, W * 0.06);   // боковой скос
+      const tuckCornerR = Math.min(2.0, tuckH * 0.15); // скругление носика
+      const tuckLockW = Math.min(W * 0.20, 18);        // ширина центрального фиксатора
+      const tuckLockH = Math.min(tuckH * 0.25, 4);     // глубина выемки фиксатора
+
+      const outer = [];
+
+      // Старт: левый верхний угол корпуса (стык клеевого клапана и P1)
+      outer.push(`M ${f(x1)} ${f(yTopSide)}`);
+      // Вверх по левой кромке P1 до биговки tuck-клапана
+      outer.push(`L ${f(x1)} ${f(yLidCrease)}`);
+      // Левый скос tuck-клапана (внутрь к центру)
+      outer.push(`L ${f(x1 + tuckSideInset)} ${f(yTuckTop + tuckCornerR)}`);
+      // Скругление
+      outer.push(`Q ${f(x1 + tuckSideInset)} ${f(yTuckTop)} ${f(x1 + tuckSideInset + tuckCornerR)} ${f(yTuckTop)}`);
+      // Верхняя кромка до центрального фиксатора
+      outer.push(`L ${f(x2 - tuckLockW/2)} ${f(yTuckTop)}`);
+      // Центральный фиксатор (выемка вниз)
+      outer.push(`L ${f(x2 - tuckLockW/2 + 1)} ${f(yTuckTop + tuckLockH)}`);
+      outer.push(`L ${f(x2 + tuckLockW/2 - 1)} ${f(yTuckTop + tuckLockH)}`);
+      outer.push(`L ${f(x2 + tuckLockW/2)} ${f(yTuckTop)}`);
+      // Верхняя кромка до правого скоса
+      outer.push(`L ${f(x2 - tuckSideInset - tuckCornerR)} ${f(yTuckTop)}`);
+      outer.push(`Q ${f(x2 - tuckSideInset)} ${f(yTuckTop)} ${f(x2 - tuckSideInset)} ${f(yTuckTop + tuckCor
