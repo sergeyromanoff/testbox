@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1.0 Тестовый инженерный генератор ECMA A55.20.01.01 (1:1 мм)</title>
+  <title>Тестовый инженерный генератор ECMA A55.20.01.01 (1:1 мм)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -423,7 +423,6 @@
     const r2 = (v) => Math.round(v * 100) / 100;
     const f = (v) => Number(v.toFixed(3)).toString();
 
-    // Вычисление зависимых переменных (аналог Automatically reinitialize subsequent variables)
     function computeDerivedVars(L, W, D, DX) {
       const u132 = r2(INCH / 32); // ~0.79 мм (1/32")
       const u332 = r2((3 * INCH) / 32); // ~2.38 мм (3/32")
@@ -501,7 +500,6 @@
       });
     }
 
-    // Построение точной дуги скругления угла по касательной
     function filletCorner(pPrev, pCorner, pNext, radius) {
       if (radius <= 0.01) {
         return { p1: pCorner, p2: pCorner, arc: '' };
@@ -546,17 +544,15 @@
       const D = Math.max(20, state.D);
       const DX = Math.max(0, state.DX);
 
-      // Координаты вертикальных линий биговки (слева направо, как на Main menu):
-      // Glue flap | P1 (W) | P2 (L) | P3 (W) | P4 (W - DX)
       const C = Math.max(4, state.C);
-      const x1 = 0;                 // Сгиб клеевого клапана
-      const x2 = x1 + W;            // P1: ширина W (над ней крышка Top cover flap)
-      const x3 = x2 + L;            // P2: ширина L (над ней 1-й пыльник)
-      const x4 = x3 + W;            // P3: ширина W (без верхнего клапана)
-      const x5 = x4 + Math.max(10, W - DX); // P4: ширина W - DX (над ней 2-й пыльник)
+      const x1 = 0;
+      const x2 = x1 + W;
+      const x3 = x2 + L;
+      const x4 = x3 + W;
+      const x5 = x4 + Math.max(10, W - DX);
 
-      const yTop = 0;               // Верхняя линия биговки корпуса
-      const yBot = D;               // Нижняя линия биговки корпуса
+      const yTop = 0;
+      const yBot = D;
 
       // -----------------------------------------------------------------------
       // ВЕРХНЯЯ ЧАСТЬ: P1 (Крышка) + P2 (Пыльник) + P3 (Стенка) + P4 (Пыльник)
@@ -576,7 +572,6 @@
 
       const FRTO = Math.max(0, Math.min(FTO * 0.98, (W - 2 * (FXTO + YTO)) * 0.48, state.FRTO));
 
-      // Контур крышки на P1 (от (x1, yTop) до (x2, yTop))
       const lidLeftX = x1 + FXTO;
       const lidRightX = x2 - FXTO;
       const tuckLeftX = lidLeftX + YTO;
@@ -601,7 +596,7 @@
       lidPath += `L ${f(tuckRightX)} ${f(yLidCrease - SVTO)} `;
       lidPath += `L ${f(x2)} ${f(yLidCrease - SVTO)} L ${f(x2)} ${f(yTop)} `;
 
-      // Верхние пылезащитные клапаны (Top dust flap на P2 и P4)
+      // Верхние пылезащитные клапаны
       const G = Math.max(5, state.G);
       const Z = Math.max(0, Math.min(G * 0.6, state.Z));
       const U = Math.max(0, state.U);
@@ -609,7 +604,6 @@
       const ga1Rad = (state.GA1 * Math.PI) / 180;
       const ga2Rad = (state.GA2 * Math.PI) / 180;
 
-      // Расчёт ступеньки зацепа (Z -> угол GA1 -> отступ U -> угол GA2 до высоты G)
       const yDustTop = yTop - G;
       const yNotchTop = yTop - Z;
       const dyGa1 = U > 0 ? Math.min(G - Z, U / Math.max(0.05, Math.tan(ga1Rad))) : 0;
@@ -617,7 +611,6 @@
       const dyGa2 = Math.max(0, yGa1End - yDustTop);
       const dxGa2 = dyGa2 * Math.tan(ga2Rad);
 
-      // P2 Dust flap (слева со стороны крышки почти вертикаль, справа со стороны P3 зацеп Z/U/GA1/GA2)
       const p2LeftTopX = x2 + Math.min(L * 0.1, G * 0.06);
       const p2RightBaseX = x3 - V;
       const p2NotchX = p2RightBaseX;
@@ -630,10 +623,8 @@
       dustP2Path += `L ${f(p2NotchX)} ${f(yNotchTop)} `;
       dustP2Path += `L ${f(p2RightBaseX)} ${f(yTop)} `;
 
-      // P3 верхний рез
       const p3TopPath = `L ${f(x4 - V)} ${f(yTop)} `;
 
-      // P4 Dust flap (зеркальный: слева со стороны P3 зацеп Z/U/GA1/GA2, справа почти вертикаль)
       const p4LeftBaseX = x4 + V;
       const p4Ga1X = p4LeftBaseX + U;
       const p4RightTopX = x5 - Math.min((W - DX) * 0.1, G * 0.06);
@@ -648,7 +639,6 @@
 
       // -----------------------------------------------------------------------
       // НИЖНЯЯ ЧАСТЬ: ДНО ECMA A55.20.01.01
-      // P1 (опорный с пазом) | P2 (крючок) | P3 (запорный язычок) | P4 (крючок)
       // -----------------------------------------------------------------------
       const BMP = Math.max(8, state.BMP);
       const YMP = Math.max(10, state.YMP);
@@ -667,61 +657,7 @@
       const yShelf = yBot + YMP;
       const yFoot = yShelf + Y3MP;
 
-      // Функция построения бокового крючкового клапана (Bottom side flap)
-      // Если hookToLeft = true -> крючок направлен влево (к пазу P1), прямая грань справа (к язычку P3)
-      function buildSideHook(xLeft, xRight, hookToLeft) {
-        const span = xRight - xLeft;
-        const yHookBot = yBot + B;
-        const yThroat = yBot + Y;
-        const throatInset = Math.min(span * 0.45, Math.max(4, (B - Y) * 0.45));
-        const dxIan = (B - Y) * Math.tan(ianRad);
-
-        if (hookToLeft) {
-          const xStraight = xRight - X1;
-          const xThroat = xLeft + throatInset;
-          const xNoseTip = Math.max(xLeft + 1, xThroat - dxIan);
-
-          const pStart = { x: xLeft, y: yBot };
-          const pThroat = { x: xThroat, y: yThroat };
-          const pNoseCorner = { x: xNoseTip, y: yHookBot };
-          const pHeelCorner = { x: xStraight, y: yHookBot };
-          const pEnd = { x: xStraight, y: yBot };
-
-          const fNose = filletCorner(pThroat, pNoseCorner, pHeelCorner, R4);
-          const fHeel = filletCorner(pNoseCorner, pHeelCorner, pEnd, R3);
-
-          let d = `L ${f(pThroat.x)} ${f(pThroat.y)} `;
-          d += `L ${f(fNose.p1.x)} ${f(fNose.p1.y)} ${fNose.arc} `;
-          d += `L ${f(fHeel.p1.x)} ${f(fHeel.p1.y)} ${fHeel.arc} `;
-          d += `L ${f(pEnd.x)} ${f(pEnd.y)} `;
-          if (X1 > 0) d += `L ${f(xRight)} ${f(yBot)} `;
-          return d;
-        } else {
-          const xStraight = xLeft + X1;
-          const xThroat = xRight - throatInset;
-          const xNoseTip = Math.min(xRight - 1, xThroat + dxIan);
-
-          const pStart = { x: xStraight, y: yBot };
-          const pHeelCorner = { x: xStraight, y: yHookBot };
-          const pNoseCorner = { x: xNoseTip, y: yHookBot };
-          const pThroat = { x: xThroat, y: yThroat };
-          const pEnd = { x: xRight, y: yBot };
-
-          const fHeel = filletCorner(pStart, pHeelCorner, pNoseCorner, R3);
-          const fNose = filletCorner(pHeelCorner, pNoseCorner, pThroat, R4);
-
-          let d = X1 > 0 ? `L ${f(xStraight)} ${f(yBot)} ` : '';
-          d += `L ${f(fHeel.p1.x)} ${f(fHeel.p1.y)} ${fHeel.arc} `;
-          d += `L ${f(fNose.p1.x)} ${f(fNose.p1.y)} ${fNose.arc} `;
-          d += `L ${f(pThroat.x)} ${f(pThroat.y)} `;
-          d += `L ${f(pEnd.x)} ${f(pEnd.y)} `;
-          return d;
-        }
-      }
-
-      // P4: Правый крючковый клапан (идёт справа налево: от x5 к x4, крючок влево к P1)
-      // В нашем обходе контура против часовой стрелки справа налево:
-      // Построим сначала по часовой слева направо (от x4 к x5 с крючком влево), затем развернём или построим напрямую
+      // P4: Правый крючковый клапан
       let botP4Path = '';
       {
         const span = x5 - x4;
@@ -750,7 +686,7 @@
         botP4Path += `L ${f(pLeftTop.x)} ${f(pLeftTop.y)} `;
       }
 
-      // P3: Запорный язычок (Bottom lock flap, от x4 к x3 справа налево)
+      // P3: Запорный язычок
       let botP3Path = '';
       {
         const slotW = Math.min(W - 4, BMP);
@@ -783,7 +719,7 @@
         botP3Path += `L ${f(x3)} ${f(yBot)} `;
       }
 
-      // P2: Левый крючковый клапан (от x3 к x2 справа налево, крючок влево к пазу P1)
+      // P2: Левый крючковый клапан
       let botP2Path = '';
       {
         const span = x3 - x2;
@@ -812,7 +748,7 @@
         botP2Path += `L ${f(pLeftTop.x)} ${f(pLeftTop.y)} `;
       }
 
-      // P1: Опорный клапан с П-образным пазом (Bottom main flap, от x2 к x1 справа налево)
+      // P1: Опорный клапан с П-образным пазом
       let botP1Path = '';
       {
         const slotW = Math.min(W - 4, BMP);
@@ -833,7 +769,7 @@
       }
 
       // -----------------------------------------------------------------------
-      // КЛЕЕВОЙ КЛАПАН СЛЕВА (Glue flap: ширина C, углы CAT и CAB, сдвиги COT и COB)
+      // КЛЕЕВОЙ КЛАПАН СЛЕВА
       // -----------------------------------------------------------------------
       const catRad = (state.CAT * Math.PI) / 180;
       const cabRad = (state.CAB * Math.PI) / 180;
@@ -858,7 +794,6 @@
         gluePath += `L ${f(x1)} ${f(yTop)} `;
       }
 
-      // Собираем единый замкнутый контур реза (#FF0000)
       const cutPath = (
         lidPath +
         dustP2Path +
@@ -873,19 +808,15 @@
         'Z'
       ).replace(/\s+/g, ' ').trim();
 
-      // Линии биговки (#0000FF)
       const creases = [
-        // Вертикальные биговки панелей
         { x1: x1, y1: yGlueTopEnd, x2: x1, y2: yGlueBotStart },
         { x1: x2, y1: yTop, x2: x2, y2: yBot },
         { x1: x3, y1: yTop, x2: x3, y2: yBot },
         { x1: x4, y1: yTop, x2: x4, y2: yBot },
-        // Верхние горизонтальные биговки
         { x1: x1, y1: yTop, x2: x2, y2: yTop },
         { x1: tuckLeftX, y1: yLidCrease, x2: tuckRightX, y2: yLidCrease },
         { x1: x2, y1: yTop, x2: p2RightBaseX, y2: yTop },
         { x1: p4LeftBaseX, y1: yTop, x2: x5, y2: yTop },
-        // Нижние горизонтальные биговки
         { x1: x1 + Math.min(R1LP, 4), y1: yBot, x2: x2 - Math.min(R1LP, 4), y2: yBot },
         { x1: x2, y1: yBot, x2: x3, y2: yBot },
         { x1: x3 + Math.min(R1LP, 4), y1: yBot, x2: x4 - Math.min(R1LP, 4), y2: yBot },
@@ -935,12 +866,10 @@
 
       const creaseLines = g.creases
         .map((c) => `<line x1="${f(c.x1)}" y1="${f(c.y1)}" x2="${f(c.x2)}" y2="${f(c.y2)}" />`)
-        .join('
-');
+        .join('\n');
 
       let dimsSvg = '';
       if (state.showDims) {
-        const yDimTop = g.minY - 14;
         const yDimPanels = g.maxY + 14;
         const yDimTotal = g.maxY + 34;
         const xDimRight = g.maxX + 16;
@@ -1079,8 +1008,7 @@
       const g = calculateGeometry();
       const creaseLines = g.creases
         .map((c) => `    <line x1="${f(c.x1)}" y1="${f(c.y1)}" x2="${f(c.x2)}" y2="${f(c.y2)}" />`)
-        .join('
-');
+        .join('\n');
 
       const svgOut = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
